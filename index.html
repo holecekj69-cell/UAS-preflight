@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Předletový průvodce UAS</title>
+<meta name="theme-color" content="#c8102e">
+<meta name="description" content="Předletový průvodce UAS – kategorie letu, zóna, úkol a kontrolní seznam.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Průvodce UAS">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --ink:#15181d; --muted:#5b6472; --line:#dde1e7;
+  --accent:#c8102e; --accent-ink:#ffffff; --sel:#fff1f3; --sel-line:#c8102e;
+  --ok:#1e7a3c; --ok-bg:#e8f5ec; --warn:#9a5b00; --warn-bg:#fff4e0;
+  --bad:#b3261e; --bad-bg:#fdecea; --info:#1f4f8a; --info-bg:#e8f0fb;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#101318; --card:#1a1e25; --ink:#eef1f5; --muted:#9aa4b2; --line:#2c323c;
+    --accent:#ff4d5e; --accent-ink:#10131a; --sel:#2a1a1e; --sel-line:#ff4d5e;
+    --ok:#5fd38a; --ok-bg:#15291d; --warn:#f0b35a; --warn-bg:#2c2313;
+    --bad:#ff8a80; --bad-bg:#2e1716; --info:#8ab6f5; --info-bg:#152234;
+    --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line)}
+.hwrap{max-width:860px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.hwrap h1{font-size:18px;margin:0;flex:1;line-height:1.2}
+.hwrap h1 small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.btn{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600;
+  padding:11px 16px;border-radius:10px;cursor:pointer;min-height:44px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.restart{border-color:var(--bad);color:var(--bad)}
+.btn.restart.arm{background:var(--bad);color:#fff}
+.stepper{max-width:860px;margin:0 auto;padding:0 16px 10px;display:flex;gap:6px;overflow-x:auto}
+.chip{flex:0 0 auto;font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.chip.on{border-color:var(--accent);color:var(--accent);font-weight:700}
+.chip.done{color:var(--ok);border-color:var(--ok)}
+main{max-width:860px;margin:0 auto;padding:16px 16px 120px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+h2{font-size:20px;margin:0 0 4px}
+h3{font-size:15px;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.lead{color:var(--muted);margin:0 0 12px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.opt{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:12px;padding:12px 14px;cursor:pointer;font:inherit;min-height:52px}
+.opt b{display:block}
+.opt span{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.opt.sel{border-color:var(--sel-line);background:var(--sel)}
+.opt.sel b::before{content:"✓ ";color:var(--accent)}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--info-bg);color:var(--info);margin-right:4px}
+.q{margin:14px 0 6px;font-weight:700}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg .opt{width:auto;flex:1 1 150px}
+.verdict{border-radius:12px;padding:14px;margin-top:6px}
+.verdict.ok{background:var(--ok-bg)} .verdict.spec{background:var(--warn-bg)} .verdict.in{background:var(--info-bg)}
+.verdict .big{font-size:22px;font-weight:800;margin:2px 0}
+.verdict ul{margin:8px 0 0;padding-left:20px}
+.note{border-left:4px solid var(--warn);background:var(--warn-bg);padding:10px 12px;border-radius:8px;margin:10px 0;font-size:14px}
+.note.info{border-color:var(--info);background:var(--info-bg)}
+.note.bad{border-color:var(--bad);background:var(--bad-bg)}
+.summary{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+.summary dt{color:var(--muted)} .summary dd{margin:0;font-weight:600}
+.prog{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin:8px 0 4px}
+.prog i{display:block;height:100%;background:var(--ok);width:0;transition:width .2s}
+.sec{margin-top:18px}
+.sec h4{margin:0 0 8px;font-size:16px;display:flex;justify-content:space-between;gap:8px}
+.sec h4 small{color:var(--muted);font-weight:600}
+.ck{display:flex;gap:12px;align-items:flex-start;padding:11px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;cursor:pointer;background:var(--card)}
+.ck input{width:24px;height:24px;flex:0 0 24px;margin:0;accent-color:var(--ok)}
+.ck.done{background:var(--ok-bg);border-color:transparent}
+.ck.done .t{text-decoration:line-through;color:var(--muted)}
+.ck .src{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.nav .in{max-width:860px;margin:0 auto;display:flex;gap:10px}
+.nav .in .btn{flex:1}
+.hint{font-size:13px;color:var(--bad);text-align:center;margin-top:6px;min-height:1em}
+.done-banner{background:var(--ok-bg);color:var(--ok);font-weight:800;text-align:center;padding:14px;border-radius:12px;margin-top:10px}
+footer{color:var(--muted);font-size:12px;margin-top:20px}
+@media print{header,.nav{display:none} main{padding:0} .card{box-shadow:none}}
+.sub{grid-column:1/-1;display:grid;gap:8px;margin:-2px 0 4px 18px;padding-left:12px;border-left:3px solid var(--accent,#c8102e)}
+.sub .q{margin:4px 0 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <h1>Předletový průvodce UAS<small>kategorie · zóna · úkol · kontrolní seznam</small></h1>
+    <button class="btn restart" data-act="restart">Restart</button>
+  </div>
+  <div class="stepper" id="stepper"></div>
+</header>
+<main id="app"></main>
+<div class="nav"><div class="in">
+  <button class="btn" data-act="back" id="bBack">Zpět</button>
+  <button class="btn primary" data-act="next" id="bNext">Další</button>
+</div><div class="hint" id="hint"></div></div>
+
+<script>
+"use strict";
+/* ============================ DATA ============================ */
+const DRONES = {
+  flip:    {name:"DJI Flip", cls:"C0", mtom:"249 g", sensors:["kamera 1/1,3″ CMOS 48 MP","ochranné rámy vrtulí"], caps:["rgb","indoor"]},
+  avata:   {name:"DJI Avata 360", cls:"C1", mtom:"≈ 400 g", sensors:["2× 1/1,1″ CMOS – 360° video 8K","FPV režim","ochranný rám (cinewhoop)"], caps:["rgb","fpv","indoor"]},
+  mavic3:  {name:"DJI Mavic 3", cls:"C1", mtom:"≈ 895 g", sensors:["Hasselblad 4/3″ CMOS 20 MP","teleobjektiv 162 mm"], caps:["rgb","zoom"]},
+  mavic3t: {name:"DJI Mavic 3T", cls:"C2", mtom:"≈ 1 050 g", sensors:["širokoúhlá kamera 48 MP","tele 12 MP (hybridní zoom 56×)","termovize 640 × 512"], caps:["rgb","zoom","thermal"]},
+  m30:     {name:"DJI Matrice 30", cls:"C2", mtom:"≈ 4 kg", sensors:["širokoúhlá kamera 12 MP","zoom kamera 48 MP","laserový dálkoměr"], caps:["rgb","zoom","lrf"], ip:true},
+  m400:    {name:"DJI Matrice 400", cls:"C3", mtom:"< 25 kg", sensors:["FPV kamera","osazené payloady – viz níže"], caps:[], ip:true, heavy:true}
+};
+const PAYLOADS = {
+  p1:    {name:"Zenmuse P1", desc:"fotogrammetrie, full-frame 45 MP – po výběru zvol objektiv", caps:["rgb","photogrammetry"]},
+  l3:    {name:"Zenmuse L3", desc:"LiDAR + RGB kamera", caps:["rgb","lidar"]},
+  h30t:  {name:"Zenmuse H30T", desc:"zoom, termovize, dálkoměr, NIR přisvětlení", caps:["rgb","zoom","thermal","lrf"]},
+  ch4:   {name:"BL-CH4 400", desc:"laserový dálkový detektor metanu (TDLAS)", caps:["methane"]},
+  mica:  {name:"MicaSense RedEdge-P Dual", desc:"multispektrál, DLS 2", caps:["multispectral"]}
+};
+const MISSIONS = [
+  {id:"recon",   name:"Průzkum místa zásahu – situační přehled", desc:"živý obraz pro velitele zásahu", any:["rgb"]},
+  {id:"sarday",  name:"Pátrání po osobách – denní", desc:"vizuální prohledávání se zoomem", any:["zoom"]},
+  {id:"sarth",   name:"Pátrání po osobách – termovize / noc", desc:"detekce tepelné stopy", any:["thermal"]},
+  {id:"fireth",  name:"Průzkum požáru – ohniska a skrytá ohniska", desc:"termovize při zásahu a dohašování", any:["thermal"]},
+  {id:"wild",    name:"Požár v přírodě – monitoring čela a perimetru", desc:"směr šíření, podklady pro štáb", any:["thermal","zoom"]},
+  {id:"doc",     name:"Dokumentace události", desc:"foto a video pro zprávu a šetření", any:["rgb"]},
+  {id:"ortho",   name:"Fotogrammetrie – ortofoto / 3D model", desc:"mapování plochy nebo objektu", any:["photogrammetry"]},
+  {id:"lidar",   name:"LiDAR mapování terénu a objektů", desc:"mračno bodů, terén pod vegetací", any:["lidar"]},
+  {id:"inspect", name:"Inspekce konstrukcí a střech", desc:"detail poškození, zoom", any:["zoom"]},
+  {id:"thinsp",  name:"Termografická inspekce", desc:"FVE, rozvody, střešní pláště", any:["thermal"]},
+  {id:"methane", name:"Detekce úniku metanu", desc:"plynovody, skládky, bioplynové stanice", any:["methane"]},
+  {id:"ndvi",    name:"Multispektrální hodnocení vegetace", desc:"NDVI, sucho, riziko požáru", any:["multispectral"]},
+  {id:"lrf",     name:"Zaměření cíle laserovým dálkoměrem", desc:"souřadnice a vzdálenost cíle", any:["lrf"]},
+  {id:"indoor",  name:"Průzkum interiéru / stísněných prostor", desc:"bez GNSS, blízko překážek", any:["indoor"]},
+  {id:"fpv",     name:"FPV / 360° záznam", desc:"let s brýlemi, sférické video", any:["fpv"]},
+  {id:"flood",   name:"Povodeň – přehled zaplavené oblasti", desc:"hranice rozlivu, ohrožené objekty", any:["rgb"]},
+  {id:"train",   name:"Výcvik pilota / cvičný let", desc:"nácvik dovedností a postupů", any:[]}
+];
+const ZONES = {
+  none:  {name:"Mimo zeměpisné zóny", desc:"DroneMap neukazuje v místě žádnou zónu"},
+  z311:  {name:"LKR311 – železnice", desc:"železniční infrastruktura"},
+  z312:  {name:"LKR312 – energetika", desc:"elektrické stanice a vedení"},
+  z313:  {name:"LKR313 – vodní zdroje", desc:"ochrana vodních zdrojů"},
+  z314:  {name:"LKR314 – řízené letiště", desc:"CTR / MCTR"},
+  z315:  {name:"LKR315 – neřízené letiště, heliport", desc:"ATZ, SLZ, HEL, PIS"},
+  z316:  {name:"LKR316 – hustě osídlený prostor", desc:"HOP"},
+  z317:  {name:"LKR317 – dálnice a silnice", desc:"pozemní komunikace"},
+  z318:  {name:"LKR318 – zvláště chráněné území", desc:"NP, CHKO, MZCHÚ"},
+  z319:  {name:"LKR319 – obrana státu", desc:"vojenské prostory a objekty"},
+  air:   {name:"Klasický vzdušný prostor", desc:"LKP, LKR, LKD, TRA, TSA"},
+  temp:  {name:"Dočasné omezení", desc:"opatření ÚCL (§ 44h), NOTAM"}
+};
+const STEPS = ["Dron","Parametry letu","Zóna","Úkol","Kontrolní seznam"];
+
+/* ============================ STATE ============================ */
+const KEY = "uas-pruvodce-v2";
+/* Objektivy Zenmuse P1 (DJI Enterprise – Zenmuse P1 Specs) */
+const P1L = {
+  "24": {n:"DJI DL 24mm F2.8 LS ASPH", d:"FOV 84° – standardní mapování, ortofoto"},
+  "35": {n:"DJI DL 35mm F2.8 LS ASPH", d:"FOV 63,5° – šikmé snímky, 3D modely"},
+  "50": {n:"DJI DL 50mm F2.8 LS ASPH", d:"FOV 46,8° – jemné GSD z větší výšky, detail"}
+};
+function plName(k){ return k==="p1" && P1L[S.p1lens] ? "Zenmuse P1 ("+S.p1lens+" mm)" : PAYLOADS[k].name; }
+function fresh(){ return {step:0, drone:null, m400var:"C3", payloads:[], p1lens:null, p:{}, zones:[], mission:null, checks:{}}; }
+let S = fresh();
+try{ const raw = localStorage.getItem(KEY); if(raw){ S = Object.assign(fresh(), JSON.parse(raw)); } }catch(e){}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ============================ LOGIC ============================ */
+function droneCls(){ if(!S.drone) return null; return S.drone==="m400" ? S.m400var : DRONES[S.drone].cls; }
+function caps(){
+  if(!S.drone) return [];
+  const c = new Set(DRONES[S.drone].caps);
+  if(S.drone==="m400") S.payloads.forEach(k => PAYLOADS[k].caps.forEach(x => c.add(x)));
+  return [...c];
+}
+function missionAvail(m){ if(!m.any.length) return true; const c = caps(); return m.any.some(x => c.includes(x)); }
+
+function classify(){
+  const p = S.p, cls = droneCls(), why = [], qual = [], notes = [];
+  if(p.env==="in"){
+    return {code:"IN", kind:"in", title:"Mimo působnost nařízení (EU) 2019/947",
+      sub:"Let uvnitř uzavřené budovy",
+      why:["Nařízení se vztahuje na provoz ve venkovním vzdušném prostoru; kategorie a registrace se na vnitřní let neuplatní (skripta kap. 12.3)."],
+      qual:["Odpovědnost za škodu a za bezpečnost osob v objektu trvá.","Postupuj podle interních postupů organizace."], notes:[]};
+  }
+  const spec = [];
+  if(p.vlos==="bvlos") spec.push("let mimo přímý dohled (BVLOS)");
+  if(p.height==="gt120") spec.push("výška nad 120 m");
+  if(p.drop==="yes") spec.push("shoz nákladu nebo přeprava nebezpečného zboží");
+  if(p.people==="assembly") spec.push("let nad shromážděním osob");
+  if(cls==="C6") spec.push("třída C6 je určena pro standardní scénář STS-02, ne pro otevřenou kategorii");
+  let sub = null;
+  if(!spec.length){
+    if(cls==="C0"){ sub="A1"; if(p.people==="over") why.push("C0 smí nad jednotlivými nezapojenými osobami, nikdy nad shromážděním (FAQ ÚCL 4.2)."); }
+    else if(cls==="C1"){
+      if(p.people==="over") spec.push("C1 nesmí záměrně přelétávat nezapojené osoby (FAQ ÚCL 4.2)");
+      else sub="A1";
+    }
+    else if(cls==="C2"){
+      if(p.people==="over") spec.push("C2 nesmí přelétávat nezapojené osoby");
+      else if(p.people==="lt30" && !p.lowspeed) spec.push("C2 méně než 30 m od nezapojených osob bez režimu nízké rychlosti");
+      else if(p.people==="none"){ sub="A3"; why.push("C2 v prostoru bez nezapojených osob smí v A3 (stačí osvědčení A1/A3); alternativně A2."); }
+      else { sub="A2"; why.push(p.people==="lt30" ? "Režim nízké rychlosti: odstup od nezapojených osob nejméně 5 m." : "Odstup od nezapojených osob nejméně 30 m."); }
+    }
+    else if(cls==="C3"){
+      if(p.people!=="none") spec.push("C3 jen v A3: bez nezapojených osob a nejméně 150 m od obytných, obchodních, průmyslových a rekreačních oblastí");
+      else sub="A3";
+    }
+  }
+  if(spec.length){
+    const paths = [];
+    if(cls==="C6" && p.vlos==="bvlos" && p.people!=="assembly") paths.push("Standardní scénář STS-02 – prohlášení u ÚCL, jsou-li splněny podmínky scénáře (řídce osídlená oblast, kontrolovaná pozemní oblast, pozorovatelé vzdušného prostoru).");
+    paths.push("Oprávnění k provozu (OkP) od ÚCL na základě SORA 2.5 nebo PDRA (čl. 11 nařízení (EU) 2019/947).");
+    if(p.people==="assembly") paths.push("Let nad shromážděním představuje vysoké riziko na zemi – počítej s vysokou úrovní SAIL.");
+    qual.push("Kvalifikace pilota podle oprávnění k provozu, u STS osvědčení podle UAS.SPEC.050.");
+    qual.push("Provozovatel registrován u ÚCL, registrační číslo na dronu a v e-identifikaci (čl. 14).");
+    return {code:"SPEC", kind:"spec", title:"SPECIFICKÁ kategorie", sub:"Nutné oprávnění nebo prohlášení před letem",
+      why:spec.map(x=>"Důvod: "+x+"."), qual, notes:paths};
+  }
+  if(sub==="A1" && cls==="C0") qual.push("Výcvik se nevyžaduje – seznámení s příručkou výrobce (FAQ ÚCL 3.1).");
+  if((sub==="A1" && cls!=="C0") || sub==="A3") qual.push("Osvědčení A1/A3 – online výcvik a test ÚCL, 40 otázek (FAQ ÚCL 3.1).");
+  if(sub==="A2") qual.push("Osvědčení A1/A3 + praktický výcvik samostudiem + osvědčení A2 (zkouška u ÚCL, 30 otázek, ≥ 75 %).");
+  qual.push("Provozovatel registrován u ÚCL (dron.caa.cz); dron nese kameru, registrace je povinná (čl. 14).");
+  qual.push("Pilot splňuje minimální věk podle čl. 9 nařízení (EU) 2019/947.");
+  const subtxt = {A1:"A1 – lehký dron, smí i nad jednotlivými osobami (ne nad shromážděním)", A2:"A2 – blízko osob s odstupem", A3:"A3 – daleko od osob a zástavby"}[sub];
+  return {code:sub, kind:"ok", title:"OTEVŘENÁ kategorie – "+sub, sub:subtxt, why, qual, notes:[
+    "Limity OPEN: výška do 120 m, přímý dohled (VLOS), bez shozu nákladu, nikdy nad shromážděním osob (čl. 4 nařízení (EU) 2019/947)."]};
+}
+
+/* ============================ CHECKLIST ============================ */
+function I(t,src){ return {t, src}; }
+function buildChecklist(){
+  const v = classify(), p = S.p, d = DRONES[S.drone], cls = droneCls(), secs = [];
+  const m = MISSIONS.find(x=>x.id===S.mission);
+
+  // 1 Regulace
+  const reg = [];
+  if(v.code!=="IN"){
+    reg.push(I("Kategorie letu odpovídá plánu: "+v.title+" ("+(v.sub||"")+")"));
+    v.qual.forEach(q=>reg.push(I(q)));
+    if(v.code==="SPEC") reg.push(I("Platné oprávnění k provozu / prohlášení STS je k dispozici a let je v jeho mezích.","čl. 11–12 nařízení (EU) 2019/947"));
+    if(v.code==="A2") reg.push(I("Nezapojené osoby udržovány v odstupu "+(p.lowspeed&&p.people==="lt30"?"≥ 5 m (režim nízké rychlosti zapnut)":"≥ 30 m")+"."));
+    if(v.code==="A3") reg.push(I("V prostoru nejsou nezapojené osoby; odstup ≥ 150 m od obytných, obchodních, průmyslových a rekreačních oblastí."));
+    if(p.mode==="civil") reg.push(I("Ověřeno, že v prostoru ani v jeho blízkosti neprobíhá zásah složek IZS.","UAS.OPEN.060(4); § 92c zák. 49/1997 Sb. – pokuta až 75 000 Kč"));
+    reg.push(I("Pojištění odpovědnosti provozovatele platné."));
+  } else {
+    v.qual.forEach(q=>reg.push(I(q)));
+    reg.push(I("Objekt je uzavřený – let neprobíhá ve venkovním vzdušném prostoru."));
+  }
+  secs.push({t:"Regulace a doklady", items:reg});
+
+  // 2 Režim HZS
+  if(p.mode==="hzs"){
+    secs.push({t:"Zásah / cvičení HZS", items:[
+      I("Nařízení EU platí i pro hasičské UAS – registrace, kvalifikace a kategorie jsou splněny.","§ 54s odst. 2 zák. 49/1997 Sb."),
+      I("Velitel zásahu informován, nasazení dronu schváleno a zadán úkol."),
+      I("Odchylka od pravidel létání jen tehdy, nelze-li jinak splnit základní úkol HZS ČR, a jen v nezbytném rozsahu – důvod zaznamenán.","§ 50a zák. 49/1997 Sb."),
+      I("Koordinace s leteckými prostředky nad místem (LZS, Policie ČR, armáda) zajištěna – bez koordinace se výjimka nepoužije.","§ 50a zák. 49/1997 Sb."),
+      I("Pilot a pozorovatel jsou mimo nebezpečný prostor zásahu a mají spojení s velitelem.")
+    ]});
+  }
+
+  // 3 Zóny
+  if(v.code!=="IN"){
+    const z = [];
+    z.push(I("Místo letu ověřeno v DroneMap (dronemap.gov.cz) těsně před letem.","DroneMap – správce ÚCL, provoz ŘLP ČR"));
+    const real = S.zones.filter(k=>k!=="none");
+    if(real.length){
+      z.push(I("Otevřena karta každé dotčené zóny – rozhodující jsou podmínky na kartě (souhlas, oznámení, výška, čas)."));
+      z.push(I("Požadovaný souhlas správce zóny nebo oznámení je vyřízeno a doklad je u pilota."));
+    }
+    const ZI = {
+      z311:["Nelétat nad projíždějícími vlaky a nad trakčním vedením; odstup od trati dle karty zóny."],
+      z312:["Bezpečný odstup od vodičů a zařízení stanice.","Počítat s rušením kompasu u silných polí – kalibrace mimo vedení, připravenost na let bez GNSS/ATTI."],
+      z313:["Podmínky ochrany vodního zdroje dle karty; plánovat nouzové přistání mimo vodní plochu."],
+      z314:["Podmínky řízeného letiště dle karty (koordinace, max. výška ve čtverci mapy) splněny.","Sledovat provoz letadel s posádkou; při jejich přiblížení klesnout a ustoupit."],
+      z315:["Koordinace s provozovatelem letiště / heliportu dle karty; počítat s příletem vrtulníku LZS."],
+      z316:["Hustě osídlený prostor – kvalifikace a kategorie odpovídají; vytipovány plochy pro nouzové přistání bez osob."],
+      z317:["Nelétat nad jedoucími vozidly; neodvádět pozornost řidičů; start mimo vozovku."],
+      z318:["Souhlas správy NP / CHKO dle karty zóny; omezit rušení živočichů (hnízdění, stáda)."],
+      z319:["Podmínky obrany státu dle karty; bez splnění podmínek do zóny nevstupovat."],
+      air:["Aktivita LKP / LKR / LKD / TRA / TSA ověřena (AUP, NOTAM); do aktivního zakázaného prostoru se nevstupuje.","AIM ŘLP ČR (aim.rlp.cz)"],
+      temp:["Platnost a podmínky dočasného omezení ověřeny (opatření ÚCL, NOTAM).","§ 44h zák. 49/1997 Sb."]
+    };
+    real.forEach(k => (ZI[k]||[]).forEach((t,i,arr)=>{
+      if(k==="air" && i===1) return;
+      if(k==="temp" && i===1) return;
+      z.push(I(ZONES[k].name.split(" – ")[0]+": "+t, (k==="air"&&arr[1]) || (k==="temp"&&arr[1]) || undefined));
+    }));
+    if(!real.length) z.push(I("DroneMap v místě neukazuje zónu – výsledek uložen / zapamatován pro záznam o letu."));
+    secs.push({t:"Zóna a vzdušný prostor", items:z});
+  }
+
+  // 4 Počasí
+  const w = [];
+  if(v.code!=="IN"){
+    w.push(I("Vítr a poryvy ve výšce letu pod limitem výrobce – vítr ve výšce bývá silnější než u země.","skripta kap. 10.2"));
+    w.push(I("Bez bouřkové oblačnosti (Cb, TCu) v okolí; riziko střihu větru a mikroburstu vyloučeno.","skripta kap. 9–10"));
+    w.push(I("Teplota a riziko námrazy posouzeny (vlhko kolem 0 °C, oblačnost = zákaz letu).","skripta kap. 10.8"));
+    w.push(I("Dohlednost umožňuje udržet VLOS po celý let."));
+    w.push(I(d.ip ? "Srážky: dron má krytí proti vodě dle výrobce – ověřit, že intenzita srážek je v jeho limitu." : "Srážky: dron nemá krytí proti vodě – v dešti a mlze nelétat."));
+    w.push(I("Geomagnetická aktivita (Kp index) a kvalita GNSS ověřeny."));
+    if(p.time==="night") w.push(I("Noční let: teplotní inverze a mlha u země ověřeny; pozorovatel vidí dron po celý let."));
+  } else {
+    w.push(I("Vnitřní prostor: ověřeno proudění vzduchu (vzduchotechnika, průvan, kouř, teplo od požáru)."));
+  }
+  secs.push({t:"Počasí a prostředí", items:w});
+
+  // 5 Technika
+  const t = [
+    I("Vrtule bez poškození, správně dotažené; rám a ramena bez prasklin."),
+    I("Akumulátory nabité, teplota článků v provozním rozsahu (v chladu předehřev); rezerva na návrat proti větru.","skripta kap. 5, 10.10"),
+    I("Ovladač nabitý, spojení a obraz stabilní; firmware a databáze zón (GEO) aktuální."),
+    I("Kalibrace kompasu a IMU bez chyb; žádné chybové hlášení."),
+    I("Výška návratu (RTH) nastavena nad nejvyšší překážku v okolí; akce při ztrátě spoje zvolena.","skripta kap. 7.5"),
+    I("Paměťová karta vložena a má dost místa."),
+    I("Registrační číslo provozovatele na dronu a nahrané do e-identifikace (Remote ID).","čl. 14 nařízení (EU) 2019/947")
+  ];
+  if(S.drone==="flip") t.push(I("Ochranné rámy vrtulí nasazeny a bez poškození."));
+  if(S.drone==="avata"){ t.push(I("Brýle a ovladač nabité, obraz s nízkou latencí ověřen.")); t.push(I("Při letu v brýlích zajištěn pozorovatel, který udržuje přímý dohled.","FAQ ÚCL 7.2")); }
+  if(S.drone==="mavic3t") t.push(I("Termokamera – provedena kalibrace (FFC), paleta a rozsah teplot nastaveny."));
+  if(S.drone==="m30"||S.drone==="m400"){ t.push(I("Obě letové baterie stejně nabité a zahřáté; zámky baterií zajištěny.")); t.push(I("Antény ovladače a datalink nasměrovány; dohled nad dronem neblokují stromy ani budovy.")); }
+  if(S.drone==="m400"){
+    t.push(I("Payloady pevně uchyceny, gimbal volný, kryty čoček sejmuty."));
+    t.push(I("Celková hmotnost s payloady v limitu MTOM; vytrvalost přepočtena – vyšší hmotnost zkracuje let nadproporcionálně.","skripta kap. 3.4, 5.4"));
+    if(cls==="C6") t.push(I("Padák AP100 zkontrolován, nabitý a aktivní."));
+    const PI = {
+      p1:["Zenmuse P1: objektiv pevně nasazen a zajištěn; expozice a ostření nastaveny.",
+          "Zenmuse P1: v plánu mise zadán objektiv "+(P1L[S.p1lens]?P1L[S.p1lens].n:"–")+"; GSD, výška a překryv přepočteny pro toto ohnisko."],
+      l3:["Zenmuse L3: zahřátí a kalibrační manévr IMU dle výrobce; RTK FIX před startem mise."],
+      h30t:["Zenmuse H30T: kalibrace termokamery (FFC), emisivita a rozsah teplot nastaveny; dálkoměr funkční."],
+      ch4:["BL-CH4 400: autotest laseru OK, záznam dat běží, výška letu v dosahu přístroje, georeference aktivní."],
+      mica:["MicaSense RedEdge-P Dual: DLS 2 připojen a nezakrytý; snímek kalibračního panelu před letem."]
+    };
+    S.payloads.forEach(k => PI[k].forEach(x=>t.push(I(x))));
+  }
+  secs.push({t:"Technika – "+d.name, items:t});
+
+  // 6 Mise
+  const MI = {
+    recon:["Živý přenos obrazu k veliteli zásahu funkční.","Dohodnuto, co má velitel vidět (priority, sektory).","Let mimo kouřový sloupec a proud horkých plynů – turbulence a vztlak.","Odstup od proudů hasiva a od vrtulníku."],
+    sarday:["Prohledávací pásy naplánovány s překryvem, výška a rychlost umožní rozlišit postavu.","Souřadnice nálezů zaznamenány a předány pozemní skupině.","Popis hledané osoby (oblečení, barvy) znám."],
+    sarth:["Termokamera kalibrována, izoterma / paleta nastavena pro lidské tělo.","Tepelný kontrast ověřen (nejlepší v noci a ráno).","Nález ověřit zoomem nebo RGB a předat souřadnice."],
+    fireth:["Rozsah teplot termokamery nastaven na vysoké teploty.","Odstup od sálání a kouře; turbulence nad ohněm zohledněna.","Skrytá ohniska zaznamenána s polohou a předána veliteli."],
+    wild:["Směr a rychlost šíření sledovány s ohledem na vítr.","Čelo, boky a týl požáru zaznamenány, snímky georeferencovány pro štáb.","Koordinace s leteckým hašením – při příletu vrtulníku či letounu dron okamžitě uvolní prostor."],
+    doc:["Formát a rozlišení záznamu nastaveny, čas a poloha ukládány.","Ochrana osobních údajů u záběrů osob zohledněna.","Data po letu zálohována a označena."],
+    ortho:["Plán mise: plocha, výška, GSD, podélný a příčný překryv dle metodiky zpracování.","RTK FIX nebo vlícovací body (GCP) zajištěny.","Osvětlení stálé, bez rychle se měnících stínů."],
+    lidar:["Hustota bodů a rychlost letu nastaveny; překryv pásů.","RTK FIX po celou misi; kontrolní body v terénu."],
+    inspect:["Odstup od konstrukce – riziko pádu uvolněných částí.","Stínění GNSS u objektu a turbulence u budov zohledněny.","Poškození fotodokumentováno s měřítkem a polohou."],
+    thinsp:["Emisivita materiálu nastavena; odraženého slunce se vyvarovat úhlem pohledu.","Doba dne zvolena pro dostatečný tepelný kontrast."],
+    methane:["Let v dosahu detektoru nad odrazným povrchem; stálá výška a rychlost.","Trasa mapy úniku zaznamenávána, hodnoty v ppm·m.","Bezpečnost: nepřistávat v oblaku plynu, vyloučit zdroje zapálení."],
+    ndvi:["Kalibrační panel nasnímán před i po letu.","Stálé osvětlení, ideálně kolem poledne, bez přecházejících mraků.","Stejná výška a překryv pro celé území."],
+    lrf:["Dálkoměr ověřen na známém cíli.","Souřadnice cíle zapsány a předány."],
+    indoor:["Let bez GNSS – režim a vizuální senzory ověřeny, osvětlení dostatečné.","Stav konstrukce posoudil velitel; do prostoru s rizikem zřícení jen na jeho pokyn.","Spojení uvnitř budovy ověřeno (stínění signálu).","Místo pro nouzové přistání určeno."],
+    fpv:["Pozorovatel UA zajišťuje přímý dohled.","Kvalita a latence obrazu v brýlích ověřena.","360° záběr – ochrana soukromí osob v okolí."],
+    flood:["Nelétat nízko nad vodní hladinou (odrazy matou senzory, nouzové přistání do vody).","Hranice rozlivu a ohrožené objekty zaznamenány s polohou.","Koordinace s vrtulníky LZS / Policie ČR."],
+    train:["Cvičný prostor bez nezapojených osob.","Scénář výcviku a úkoly určeny, instruktor přítomen.","Let zapsán do deníku výcviku."]
+  };
+  const mi = (MI[S.mission]||[]).map(x=>I(x));
+  if(p.time==="night" && v.code!=="IN") mi.push(I("Noční let: zapnuto zelené blikající / antikolizní světlo dronu (u tříd C1–C3 povinné).","UAS.OPEN.060 nařízení (EU) 2019/947"));
+  secs.push({t:"Úkol – "+m.name, items:mi});
+
+  // 7 Lidský faktor
+  secs.push({t:"Lidský faktor a posádka", items:[
+    I("Připravenost pilota ověřena postupem IMSAFE (nemoc, léky, stres, alkohol, únava, jídlo).","FAA-H-8083-2; skripta kap. 18.5"),
+    I("Rozhodovací body stanoveny předem: mezní vítr, minimální stav baterie, čas návratu.","skripta kap. 18.4"),
+    I("Role rozděleny (pilot, pozorovatel, operátor payloadu) a domluvena komunikace.","CRM – skripta kap. 18.6"),
+    I("Nouzové postupy připomenuty: ztráta spoje, nízká baterie, ztráta GNSS, odlet dronu.")
+  ]});
+
+  // 8 Po letu
+  secs.push({t:"Po letu", items:[
+    I("Data stažena a zálohována."),
+    I("Dron, vrtule a payload zkontrolovány; závady zapsány."),
+    I("Akumulátory uloženy na skladovací napětí, poškozené vyřazeny.","skripta kap. 5.2"),
+    I("Let zapsán do provozního deníku."),
+    I("Nehoda nebo vážný incident nahlášen stanoveným způsobem.","zák. 49/1997 Sb. ve znění zák. 431/2022 Sb.")
+  ]});
+  return secs;
+}
+
+/* ============================ RENDER ============================ */
+const $ = s => document.querySelector(s);
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function opt(act,val,title,sub,sel){ return `<button class="opt${sel?" sel":""}" data-act="${act}" data-val="${esc(val)}"><b>${esc(title)}</b>${sub?`<span>${sub}</span>`:""}</button>`; }
+
+function stepValid(i){
+  if(i===0) return !!S.drone && (S.drone!=="m400" || (S.payloads.length>0 && (!S.payloads.includes("p1") || !!S.p1lens)));
+  if(i===1){
+    const p=S.p; if(!p.env) return false; if(p.env==="in") return !!p.mode && !!p.time;
+    return ["mode","time","vlos","height","people","drop"].every(k=>p[k]);
+  }
+  if(i===2) return S.p.env==="in" || S.zones.length>0;
+  if(i===3) return !!S.mission && missionAvail(MISSIONS.find(m=>m.id===S.mission));
+  return true;
+}
+const HINTS = ["Vyber dron (u Matrice 400 alespoň jeden payload, u P1 i objektiv).","Odpověz na všechny otázky.","Vyber alespoň jednu možnost (i „Mimo zeměpisné zóny“).","Vyber úkol.",""];
+
+function renderStepper(){
+  $("#stepper").innerHTML = STEPS.map((s,i)=>`<span class="chip${i===S.step?" on":""}${i<S.step?" done":""}">${i+1}. ${s}</span>`).join("");
+}
+
+function vDrone(){
+  let h = `<div class="card"><h2>1. Dron</h2><p class="lead">S čím poletíš – třída a senzory se doplní samy.</p><div class="grid">`;
+  for(const [k,d] of Object.entries(DRONES)){
+    const cls = k==="m400" ? "C3 / C6" : d.cls;
+    h += opt("drone",k,d.name,`<span class="tag">${cls}</span>${esc(d.mtom)}`,S.drone===k);
+  }
+  h += `</div></div>`;
+  if(S.drone){
+    const d = DRONES[S.drone];
+    h += `<div class="card"><h3>Profil dronu</h3><dl class="summary"><dt>Třída</dt><dd>${esc(droneCls())}</dd><dt>MTOM</dt><dd>${esc(d.mtom)}</dd><dt>Senzory</dt><dd>${d.sensors.map(esc).join("<br>")}</dd></dl>`;
+    if(S.drone==="m400"){
+      h += `<p class="q">Provedení</p><div class="seg">`+
+        opt("m400var","C3","Standard – třída C3","otevřená kategorie A3 / SPECIFIC",S.m400var==="C3")+
+        opt("m400var","C6","S padákem AP100 – třída C6","„Worry-Free Plus“ provedení pro STS-02",S.m400var==="C6")+`</div>`;
+      h += `<p class="q">Payload (lze zvolit více)</p><div class="grid">`;
+      for(const [k,pl] of Object.entries(PAYLOADS)){
+        h += opt("payload",k,pl.name,esc(pl.desc),S.payloads.includes(k));
+        if(k==="p1" && S.payloads.includes("p1")){
+          h += `<div class="sub"><p class="q">Objektiv Zenmuse P1</p>`;
+          for(const [lk,l] of Object.entries(P1L)) h += opt("p1lens",lk,l.n,esc(l.d),S.p1lens===lk);
+          h += `</div>`;
+        }
+      }
+      h += `</div>`;
+    }
+    h += `</div>`;
+  }
+  return h;
+}
+
+function vParams(){
+  const p = S.p, cls = droneCls();
+  const Q = (key,label,opts) => `<p class="q">${label}</p><div class="seg">`+opts.map(o=>opt("p:"+key,o[0],o[1],o[2]||"",p[key]===o[0])).join("")+`</div>`;
+  let h = `<div class="card"><h2>2. Parametry letu</h2><p class="lead">Kategorie se určí automaticky podle nařízení (EU) 2019/947.</p>`;
+  h += Q("env","Prostředí",[["out","Venku"],["in","Uvnitř uzavřené budovy"]]);
+  h += Q("mode","Režim provozu",[["civil","Běžný provoz","výcvik, zakázka, výzkum"],["hzs","Zásah / cvičení HZS","hasičské bezpilotní letadlo"]]);
+  h += Q("time","Denní doba",[["day","Den"],["night","Noc"]]);
+  if(p.env!=="in"){
+    h += Q("vlos","Dohled",[["vlos","V přímém dohledu (VLOS)"],["bvlos","Mimo dohled (BVLOS)"]]);
+    h += Q("height","Maximální výška",[["le120","Do 120 m"],["gt120","Nad 120 m"]]);
+    h += Q("people","Nezapojené osoby",[
+      ["assembly","Let nad shromážděním osob"],
+      ["over","Přelet nad jednotlivými osobami"],
+      ["lt30","Osoby blíže než 30 m","ne pod dronem"],
+      ["ge30","Osoby 30 m a dál","obydlená oblast"],
+      ["none","Nikdo ohrožen","≥ 150 m od zástavby"]]);
+    if(cls==="C2" && p.people==="lt30") h += Q("lowspeed","Režim nízké rychlosti (C2)",[[true,"Zapnut","odstup ≥ 5 m"],[false,"Vypnut"]]).replace(/data-val="true"/,'data-val="1"').replace(/data-val="false"/,'data-val="0"');
+    h += Q("drop","Shoz nákladu / nebezpečné zboží",[["no","Ne"],["yes","Ano"]]);
+  }
+  h += `</div>`;
+  if(stepValid(1)){
+    const v = classify();
+    h += `<div class="card"><h3>Výsledek</h3><div class="verdict ${v.kind}"><div>${esc(v.sub||"")}</div><div class="big">${esc(v.title)}</div>`;
+    if(v.why.length) h += `<ul>${v.why.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+    h += `</div>`;
+    if(v.notes.length) h += v.notes.map(n=>`<div class="note ${v.kind==="spec"?"":"info"}">${esc(n)}</div>`).join("");
+    h += `<h3>Kvalifikace a doklady</h3><ul>${v.qual.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+    if(p.mode==="hzs") h += `<div class="note info">Hasičské UAS: nařízení EU platí (§ 54s odst. 2 zák. 49/1997 Sb.). Odchýlit se od pravidel létání lze jen podle § 50a – nelze-li jinak splnit základní úkol HZS ČR, v nezbytném rozsahu a s koordinací letadel nad místem.</div>`;
+    h += `</div>`;
+  }
+  return h;
+}
+
+function vZones(){
+  if(S.p.env==="in") return `<div class="card"><h2>3. Zóna</h2><div class="note info">Let uvnitř uzavřené budovy – zeměpisné zóny se neposuzují. Pokračuj na úkol.</div></div>`;
+  let h = `<div class="card"><h2>3. Zóna z DroneMap</h2><p class="lead">Otevři <b>dronemap.gov.cz</b> a vyber vše, co v místě letu platí. Zóny se mohou překrývat.</p><div class="grid">`;
+  for(const [k,z] of Object.entries(ZONES)) h += opt("zone",k,z.name,esc(z.desc),S.zones.includes(k));
+  h += `</div><div class="note">Podmínky každé zóny určuje její karta v DroneMap. Průvodce doplní kontrolní body, kartu nenahrazuje.</div></div>`;
+  return h;
+}
+
+function vMission(){
+  const avail = MISSIONS.filter(missionAvail), na = MISSIONS.filter(m=>!missionAvail(m));
+  let h = `<div class="card"><h2>4. Úkol</h2><p class="lead">Nabídka odpovídá senzorům: <b>${esc(DRONES[S.drone].name)}</b>${S.drone==="m400"?" + "+S.payloads.map(k=>esc(plName(k))).join(", "):""}.</p><div class="grid">`;
+  avail.forEach(m => h += opt("mission",m.id,m.name,esc(m.desc),S.mission===m.id));
+  h += `</div>`;
+  if(na.length) h += `<p class="lead" style="margin-top:14px">Nedostupné s touto sestavou: ${na.map(m=>esc(m.name)).join(" · ")}</p>`;
+  return h + `</div>`;
+}
+
+function vChecklist(){
+  const v = classify(), secs = buildChecklist(), m = MISSIONS.find(x=>x.id===S.mission);
+  let total=0, done=0;
+  secs.forEach((s,si)=>s.items.forEach((_,ii)=>{ total++; if(S.checks[si+"-"+ii]) done++; }));
+  let h = `<div class="card"><h2>5. Kontrolní seznam</h2><dl class="summary">
+    <dt>Dron</dt><dd>${esc(DRONES[S.drone].name)} (${esc(droneCls())})</dd>
+    ${S.drone==="m400"?`<dt>Payload</dt><dd>${S.payloads.map(k=>esc(plName(k))).join(", ")}</dd>`:""}
+    <dt>Kategorie</dt><dd>${esc(v.title)}</dd>
+    <dt>Zóna</dt><dd>${S.p.env==="in"?"vnitřní prostor":S.zones.map(k=>esc(ZONES[k].name)).join(", ")}</dd>
+    <dt>Úkol</dt><dd>${esc(m.name)}</dd></dl>
+    <div class="prog"><i style="width:${total?Math.round(done/total*100):0}%"></i></div>
+    <div style="font-size:14px;color:var(--muted)">Splněno ${done} z ${total}</div>
+    ${done===total&&total?`<div class="done-banner">Připraveno k letu</div>`:""}
+    ${v.code==="SPEC"?`<div class="note bad">Specifická kategorie – bez platného oprávnění nebo prohlášení STS nevzlétat.</div>`:""}
+  </div>`;
+  secs.forEach((s,si)=>{
+    const sd = s.items.filter((_,ii)=>S.checks[si+"-"+ii]).length;
+    h += `<div class="card sec"><h4>${esc(s.t)} <small>${sd}/${s.items.length}</small></h4>`;
+    s.items.forEach((it,ii)=>{
+      const id = si+"-"+ii, on = !!S.checks[id];
+      h += `<label class="ck${on?" done":""}"><input type="checkbox" data-act="check" data-val="${id}"${on?" checked":""}><span><span class="t">${esc(it.t)}</span>${it.src?`<span class="src">${esc(it.src)}</span>`:""}</span></label>`;
+    });
+    h += `</div>`;
+  });
+  h += `<footer>Pomůcka pro předletovou přípravu. Nenahrazuje kartu zóny v DroneMap, příručku výrobce ani provozní postupy organizace. Právní stav: nařízení (EU) 2019/947 a 2019/945, zák. č. 49/1997 Sb. ve znění zák. č. 431/2022 Sb., FAQ ÚCL (2025), zkouškový řád UAS ÚCL (2023).</footer>`;
+  return h;
+}
+
+function render(){
+  renderStepper();
+  const V = [vDrone,vParams,vZones,vMission,vChecklist][S.step];
+  $("#app").innerHTML = V();
+  $("#bBack").disabled = S.step===0;
+  $("#bNext").style.display = S.step===4 ? "none" : "";
+  $("#bNext").textContent = S.step===3 ? "Vytvořit seznam" : "Další";
+  $("#hint").textContent = "";
+  save();
+}
+
+/* ============================ EVENTS ============================ */
+document.addEventListener("click", e=>{
+  const el = e.target.closest("[data-act]"); if(!el) return;
+  const act = el.dataset.act, val = el.dataset.val;
+  if(act==="check") return; // handled by change
+  if(act==="restart"){
+    /* potvrzení dvojím klepnutím – confirm() bývá v náhledech a vložených oknech blokován */
+    if(!el.classList.contains("arm")){
+      el.classList.add("arm"); el.textContent = "Opravdu smazat?";
+      clearTimeout(el._t); el._t = setTimeout(()=>{ el.classList.remove("arm"); el.textContent = "Restart"; }, 3000);
+      return;
+    }
+    clearTimeout(el._t); el.classList.remove("arm"); el.textContent = "Restart";
+    S = fresh(); try{ localStorage.removeItem(KEY); }catch(_){}
+    $("#hint").textContent = "";
+    render(); window.scrollTo(0,0); return;
+  }
+  if(act==="next"){
+    if(!stepValid(S.step)){ $("#hint").textContent = HINTS[S.step]; return; }
+    S.step = Math.min(4,S.step+1); render(); window.scrollTo(0,0); return;
+  }
+  if(act==="back"){ S.step = Math.max(0,S.step-1); render(); window.scrollTo(0,0); return; }
+  if(act==="drone"){
+    if(S.drone!==val){ S.drone=val; S.payloads=[]; S.p1lens=null; S.mission=null; S.checks={}; }
+  }
+  else if(act==="m400var"){ S.m400var=val; S.checks={}; }
+  else if(act==="p1lens"){ S.p1lens=val; S.checks={}; }
+  else if(act==="payload"){
+    S.payloads = S.payloads.includes(val) ? S.payloads.filter(x=>x!==val) : [...S.payloads,val];
+    if(!S.payloads.includes("p1")) S.p1lens=null;
+    S.mission=null; S.checks={};
+  }
+  else if(act.startsWith("p:")){
+    const k = act.slice(2);
+    S.p[k] = k==="lowspeed" ? val==="1" : val;
+    if(k==="people" && val!=="lt30") delete S.p.lowspeed;
+    S.checks={};
+  }
+  else if(act==="zone"){
+    if(val==="none") S.zones = S.zones.includes("none") ? [] : ["none"];
+    else { S.zones = S.zones.filter(x=>x!=="none"); S.zones = S.zones.includes(val) ? S.zones.filter(x=>x!==val) : [...S.zones,val]; }
+    S.checks={};
+  }
+  else if(act==="mission"){ S.mission=val; S.checks={}; }
+  const y = window.scrollY; render(); window.scrollTo(0,y);
+});
+document.addEventListener("change", e=>{
+  const el = e.target; if(el.dataset.act!=="check") return;
+  if(el.checked) S.checks[el.dataset.val]=true; else delete S.checks[el.dataset.val];
+  const y = window.scrollY; render(); window.scrollTo(0,y);
+});
+
+/* stepValid for lowspeed: C2 + lt30 needs explicit choice */
+const _sv = stepValid;
+stepValid = function(i){
+  if(i===1 && S.p.env!=="in" && droneCls()==="C2" && S.p.people==="lt30" && typeof S.p.lowspeed!=="boolean") return false;
+  return _sv(i);
+};
+render();
+
+/* Offline režim: service worker jen při provozu z webu (https) */
+if("serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost")){
+  window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+}
+</script>
+</body>
+</html>
