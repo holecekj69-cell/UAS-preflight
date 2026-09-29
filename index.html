@@ -115,14 +115,14 @@ const DRONES = {
   avata:   {name:"DJI Avata 360", cls:"C1", mtom:"≈ 400 g", sensors:["2× 1/1,1″ CMOS – 360° video 8K","FPV režim","ochranný rám (cinewhoop)"], caps:["rgb","fpv","indoor"]},
   mavic3:  {name:"DJI Mavic 3", cls:"C1", mtom:"≈ 895 g", sensors:["Hasselblad 4/3″ CMOS 20 MP","teleobjektiv 162 mm"], caps:["rgb","zoom"]},
   mavic3t: {name:"DJI Mavic 3T", cls:"C2", mtom:"≈ 1 050 g", sensors:["širokoúhlá kamera 48 MP","tele 12 MP (hybridní zoom 56×)","termovize 640 × 512"], caps:["rgb","zoom","thermal"]},
-  m30:     {name:"DJI Matrice 30", cls:"C2", mtom:"≈ 4 kg", sensors:["širokoúhlá kamera 12 MP","zoom kamera 48 MP","laserový dálkoměr"], caps:["rgb","zoom","lrf"], ip:true},
+  m30:     {name:"DJI Matrice 30T", cls:"C2", mtom:"≈ 4 kg", sensors:["širokoúhlá kamera 12 MP","zoom kamera 48 MP","termovize 640 × 512","laserový dálkoměr"], caps:["rgb","zoom","thermal","lrf"], ip:true},
   m400:    {name:"DJI Matrice 400", cls:"C3", mtom:"< 25 kg", sensors:["FPV kamera","osazené payloady – viz níže"], caps:[], ip:true, heavy:true}
 };
 const PAYLOADS = {
-  p1:    {name:"Zenmuse P1", desc:"fotogrammetrie, full-frame 45 MP – po výběru zvol objektiv", caps:["rgb","photogrammetry"]},
-  l3:    {name:"Zenmuse L3", desc:"LiDAR + RGB kamera", caps:["rgb","lidar"]},
-  h30t:  {name:"Zenmuse H30T", desc:"zoom, termovize, dálkoměr, NIR přisvětlení", caps:["rgb","zoom","thermal","lrf"]},
-  ch4:   {name:"BL-CH4 400", desc:"laserový dálkový detektor metanu (TDLAS)", caps:["methane"]},
+  p1:    {name:"Zenmuse P1", desc:"fotogrammetrie, full-frame 45 MP – po výběru zvol objektiv", caps:["rgb","photogrammetry","hires"]},
+  l3:    {name:"Zenmuse L3", desc:"LiDAR + 2× RGB mapovací kamera 100 MP (4/3″)", caps:["rgb","lidar","photogrammetry","hires"]},
+  h30t:  {name:"Zenmuse H30T", desc:"zoom, termovize, dálkoměr, NIR přisvětlení", caps:["rgb","zoom","thermal","lrf","mapbasic"]},
+  ch4:   {name:"BL-CH4 400", desc:"detektor metanu TDLAS (1–150 m); kamera jen pro zaměření", caps:["methane"]},
   mica:  {name:"MicaSense RedEdge-P Dual", desc:"multispektrál, DLS 2", caps:["multispectral"]}
 };
 const MISSIONS = [
@@ -132,9 +132,9 @@ const MISSIONS = [
   {id:"fireth",  name:"Průzkum požáru – ohniska a skrytá ohniska", desc:"termovize při zásahu a dohašování", any:["thermal"]},
   {id:"wild",    name:"Požár v přírodě – monitoring čela a perimetru", desc:"směr šíření, podklady pro štáb", any:["thermal","zoom"]},
   {id:"doc",     name:"Dokumentace události", desc:"foto a video pro zprávu a šetření", any:["rgb"]},
-  {id:"ortho",   name:"Fotogrammetrie – ortofoto / 3D model", desc:"mapování plochy nebo objektu", any:["photogrammetry"]},
+  {id:"ortho",   name:"Fotogrammetrie – ortofoto / 3D model", desc:"mapování plochy nebo objektu", any:["photogrammetry","mapbasic"]},
   {id:"lidar",   name:"LiDAR mapování terénu a objektů", desc:"mračno bodů, terén pod vegetací", any:["lidar"]},
-  {id:"inspect", name:"Inspekce konstrukcí a střech", desc:"detail poškození, zoom", any:["zoom"]},
+  {id:"inspect", name:"Inspekce konstrukcí a střech", desc:"detail poškození – zoom nebo kamera s vysokým rozlišením", any:["zoom","hires"]},
   {id:"thinsp",  name:"Termografická inspekce", desc:"FVE, rozvody, střešní pláště", any:["thermal"]},
   {id:"methane", name:"Detekce úniku metanu", desc:"plynovody, skládky, bioplynové stanice", any:["methane"]},
   {id:"ndvi",    name:"Multispektrální hodnocení vegetace", desc:"NDVI, sucho, riziko požáru", any:["multispectral"]},
@@ -164,9 +164,9 @@ const STEPS = ["Dron","Parametry letu","Zóna","Úkol","Kontrolní seznam"];
 const KEY = "uas-pruvodce-v2";
 /* Objektivy Zenmuse P1 (DJI Enterprise – Zenmuse P1 Specs) */
 const P1L = {
-  "24": {n:"DJI DL 24mm F2.8 LS ASPH", d:"FOV 84° – standardní mapování, ortofoto"},
-  "35": {n:"DJI DL 35mm F2.8 LS ASPH", d:"FOV 63,5° – šikmé snímky, 3D modely"},
-  "50": {n:"DJI DL 50mm F2.8 LS ASPH", d:"FOV 46,8° – jemné GSD z větší výšky, detail"}
+  "24": {n:"DJI DL 24mm F2.8 LS ASPH", d:"FOV 84° – standardní mapování, ortofoto; video jen FHD"},
+  "35": {n:"DJI DL 35mm F2.8 LS ASPH", d:"FOV 63,5° – šikmé snímky, 3D modely; jediný s videem 4K"},
+  "50": {n:"DJI DL 50mm F2.8 LS ASPH", d:"FOV 46,8° – jemné GSD z větší výšky, detail; video jen FHD"}
 };
 function plName(k){ return k==="p1" && P1L[S.p1lens] ? "Zenmuse P1 ("+S.p1lens+" mm)" : PAYLOADS[k].name; }
 function fresh(){ return {step:0, drone:null, m400var:"C3", payloads:[], p1lens:null, p:{}, zones:[], mission:null, checks:{}}; }
@@ -231,7 +231,7 @@ function classify(){
   if(sub==="A2") qual.push("Osvědčení A1/A3 + praktický výcvik samostudiem + osvědčení A2 (zkouška u ÚCL, 30 otázek, ≥ 75 %).");
   qual.push("Provozovatel registrován u ÚCL (dron.caa.cz); dron nese kameru, registrace je povinná (čl. 14).");
   qual.push("Pilot splňuje minimální věk podle čl. 9 nařízení (EU) 2019/947.");
-  const subtxt = {A1:"A1 – lehký dron, smí i nad jednotlivými osobami (ne nad shromážděním)", A2:"A2 – blízko osob s odstupem", A3:"A3 – daleko od osob a zástavby"}[sub];
+  const subtxt = {A1: cls==="C0" ? "A1 – C0 smí i nad jednotlivými nezapojenými osobami, ne nad shromážděním" : "A1 – C1 nesmí záměrně přelétávat nezapojené osoby", A2:"A2 – blízko osob s odstupem", A3:"A3 – daleko od osob a zástavby"}[sub];
   return {code:sub, kind:"ok", title:"OTEVŘENÁ kategorie – "+sub, sub:subtxt, why, qual, notes:[
     "Limity OPEN: výška do 120 m, přímý dohled (VLOS), bez shozu nákladu, nikdy nad shromážděním osob (čl. 4 nařízení (EU) 2019/947)."]};
 }
@@ -327,7 +327,7 @@ function buildChecklist(){
   ];
   if(S.drone==="flip") t.push(I("Ochranné rámy vrtulí nasazeny a bez poškození."));
   if(S.drone==="avata"){ t.push(I("Brýle a ovladač nabité, obraz s nízkou latencí ověřen.")); t.push(I("Při letu v brýlích zajištěn pozorovatel, který udržuje přímý dohled.","FAQ ÚCL 7.2")); }
-  if(S.drone==="mavic3t") t.push(I("Termokamera – provedena kalibrace (FFC), paleta a rozsah teplot nastaveny."));
+  if(S.drone==="mavic3t"||S.drone==="m30") t.push(I("Termokamera – provedena kalibrace (FFC), paleta a rozsah teplot nastaveny."));
   if(S.drone==="m30"||S.drone==="m400"){ t.push(I("Obě letové baterie stejně nabité a zahřáté; zámky baterií zajištěny.")); t.push(I("Antény ovladače a datalink nasměrovány; dohled nad dronem neblokují stromy ani budovy.")); }
   if(S.drone==="m400"){
     t.push(I("Payloady pevně uchyceny, gimbal volný, kryty čoček sejmuty."));
@@ -336,7 +336,8 @@ function buildChecklist(){
     const PI = {
       p1:["Zenmuse P1: objektiv pevně nasazen a zajištěn; expozice a ostření nastaveny.",
           "Zenmuse P1: v plánu mise zadán objektiv "+(P1L[S.p1lens]?P1L[S.p1lens].n:"–")+"; GSD, výška a překryv přepočteny pro toto ohnisko."],
-      l3:["Zenmuse L3: zahřátí a kalibrační manévr IMU dle výrobce; RTK FIX před startem mise."],
+      l3:["Zenmuse L3: zahřátí a kalibrační manévr IMU dle výrobce; RTK FIX před startem mise.",
+          "Zenmuse L3: obě RGB mapovací kamery bez nečistot; rozlišení (100 / 25 MP) a expozice nastaveny."],
       h30t:["Zenmuse H30T: kalibrace termokamery (FFC), emisivita a rozsah teplot nastaveny; dálkoměr funkční."],
       ch4:["BL-CH4 400: autotest laseru OK, záznam dat běží, výška letu v dosahu přístroje, georeference aktivní."],
       mica:["MicaSense RedEdge-P Dual: DLS 2 připojen a nezakrytý; snímek kalibračního panelu před letem."]
@@ -366,6 +367,12 @@ function buildChecklist(){
     train:["Cvičný prostor bez nezapojených osob.","Scénář výcviku a úkoly určeny, instruktor přítomen.","Let zapsán do deníku výcviku."]
   };
   const mi = (MI[S.mission]||[]).map(x=>I(x));
+  const c_ = caps();
+  if(S.mission==="ortho" && !c_.includes("photogrammetry")) mi.push(I("Orientační mapování: menší senzor bez mechanické závěrky – přesnost omezená (H30: ≤ 10 cm dle DJI); pro měřické výstupy použij P1 nebo L3.","DJI Enterprise – FAQ H30"));
+  if(S.mission==="doc" && S.payloads.includes("p1") && S.p1lens && S.p1lens!=="35") mi.push(I("Zenmuse P1 s objektivem "+S.p1lens+" mm natáčí video jen ve FHD; 4K video pouze s 35 mm.","DJI Enterprise – Zenmuse P1 Specs"));
+  if(S.mission==="methane" && S.payloads.includes("ch4")) mi.push(I("BL-CH4: vzdálenost k cíli do 150 m, vhodný odrazný povrch za únikem; cíl zaměřen kamerou detektoru."));
+  if(S.mission==="inspect" && !caps().includes("zoom")) mi.push(I("Kamera bez zoomu: detail zajištěn menším odstupem nebo vysokým rozlišením; GSD ověřeno pro nejmenší hledanou vadu."));
+  if(S.mission==="ortho" && S.payloads.includes("l3") && !S.payloads.includes("p1")) mi.push(I("Fotogrammetrie z L3: kombinované zorné pole obou kamer (107° horizontálně) zohledněno v plánu překryvu."));
   if(p.time==="night" && v.code!=="IN") mi.push(I("Noční let: zapnuto zelené blikající / antikolizní světlo dronu (u tříd C1–C3 povinné).","UAS.OPEN.060 nařízení (EU) 2019/947"));
   secs.push({t:"Úkol – "+m.name, items:mi});
 

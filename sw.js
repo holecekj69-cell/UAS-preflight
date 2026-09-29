@@ -1,5 +1,5 @@
 /* Průvodce UAS – offline cache. Při každé změně aplikace zvyš VERZE. */
-const VERZE = "pruvodce-uas-v1";
+const VERZE = "pruvodce-uas-v4";
 const SOUBORY = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png",
